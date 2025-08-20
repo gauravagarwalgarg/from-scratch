@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -16,21 +16,20 @@ def allow_std_identifier_from_header(ident, std_header):
         '<new>': ['::new', '::operator new', '::operator delete', 'std::align_val_t', 'std::bad_alloc'],
         '<typeinfo>': ['std::type_info', 'typeid'],
         '<utility>': ['std::exchange', 'std::move', 'std::forward', 'std::swap'],
+        '<fcntl.h>': ['open', 'close', 'read', 'fcntl', 'O_RDONLY', 'O_WRONLY', 'O_RDWR', 'O_NONBLOCK', 'O_CLOEXEC'],
+        '<unistd.h>': ['read', 'close', 'getpid', 'fork']
     }
+    
     allowed_idents_from_header = allowed.get('<' + std_header + '>', [])
     return (ident in allowed_idents_from_header)
 
 
 def list_all_h_files_under(root):
-    def collector(result, dirname, fnames):
-        for fname in fnames:
-            fullname = dirname + '/' + fname
-            if os.path.isdir(fullname):
-                result += list_all_h_files_under(fullname)
-            elif fullname.endswith('.h'):
-                result.append(fullname)
     result = []
-    os.path.walk(root, collector, result)
+    for dirpath, dirnames, filenames in os.walk(root):
+        for fname in filenames:
+            if fname.endswith('.h'):
+                result.append(os.path.join(dirpath, fname))
     return result
 
 
@@ -76,6 +75,9 @@ def list_all_files_included_by(fname, options):
                 std_identifiers += re.findall(r'\b(u?int\d+_t)\b', line)
                 std_identifiers += re.findall(r'\b(size_t)\b', line)
                 std_identifiers += re.findall(r'\b(typeid)\b', line)
+                std_identifiers += re.findall(r'(?:::)?(open|close|read|fcntl)\b', line)
+                std_identifiers += re.findall(r'\b(O_[A-Z0-9_]+)\b', line)
+
     except RuntimeError as e:
         raise RuntimeError(str(e) + ' in ' + fname)
     return (local_headers, std_headers, sorted(set(std_identifiers)))
@@ -96,8 +98,8 @@ def build_graph(roots, options):
 
 def is_under_source_control(fname):
     try:
-        x = subprocess.check_output(['git', 'log', '-l', '1', '--format=oneline', fname])
-        return (x != '')
+        x = subprocess.check_output(['git', 'log', '-l', '1', '--format=oneline', fname], stderr=subprocess.STDOUT)
+        return bool(x.strip())
     except subprocess.CalledProcessError:
         return False
 
@@ -126,7 +128,7 @@ def get_graphviz(inclusions, options):
     result += '    size="10,8";\n'
     result += '    rankdir=LR;\n'
     result += '    layout=dot;\n\n'
-    for fname, value in inclusions.iteritems():
+    for fname, value in inclusions.items():
         local_headers, std_headers, std_identifiers = value
         result += '    %s%s;\n' % (get_friendly_name(fname), get_decorators(fname))
         for h in local_headers:
@@ -161,13 +163,13 @@ if __name__ == '__main__':
     inclusions = build_graph(roots, options)
 
     if options.dot:
-        print get_graphviz(inclusions, options)
+        print(get_graphviz(inclusions, options))
     else:
-        for fname, value in inclusions.iteritems():
+        for fname, value in inclusions.items():
             local_headers, std_headers, std_identifiers = value
-            print '%s => %s' % (fname, ' '.join(local_headers))
+            print('%s => %s' % (fname, ' '.join(local_headers)))
 
-        for fname, value in inclusions.iteritems():
+        for fname, value in inclusions.items():
             local_headers, std_headers, std_identifiers = value
             for ident in std_identifiers:
                 if not any(allow_std_identifier_from_header(ident, h) for h in std_headers):
@@ -176,3 +178,4 @@ if __name__ == '__main__':
                 if not any(allow_std_identifier_from_header(ident, h) for ident in std_identifiers):
                     if not any(fname.endswith(h) for h in ['linux-futex.h']):
                         raise RuntimeError('%s => <%s> is not needed for anything' % (fname, h))
+

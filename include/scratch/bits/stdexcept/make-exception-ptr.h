@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include <utility>
 
 namespace scratch {
 

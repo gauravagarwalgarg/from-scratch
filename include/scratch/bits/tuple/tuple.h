@@ -9,6 +9,7 @@
 #include "scratch/bits/utility/declval.h"
 #include "scratch/bits/utility/integer-sequence.h"
 
+#include <cstddef>
 #include <utility>
 
 namespace scratch {

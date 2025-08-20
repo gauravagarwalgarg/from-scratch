@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import random
@@ -42,9 +42,9 @@ class LayoutState(object):
 
     def print_layout(self):
         for so in self.layout:
-            print '%3d: %s%s' % (so.offset, so.base.name, ' (virtual)' if so.is_virtual else '')
+            print('%3d: %s%s' % (so.offset, so.base.name, ' (virtual)' if so.is_virtual else ''))
             for dso in so.direct_subobject_of:
-                print '  direct subobject of %s (%d)' % (dso.base.name, dso.offset)
+                print('  direct subobject of %s (%d)' % (dso.base.name, dso.offset))
 
 
 class Node(object):
