@@ -185,8 +185,8 @@ class Node(object):
 
     def get_public_child_pairs(self):
         state = self.get_populated_layout_state()
-        return sorted(state.public_child_pairs - state.ambiguous_public_child_pairs)
-
+        return sorted(state.public_child_pairs - state.ambiguous_public_child_pairs,
+                      key=lambda pc: (pc[0].base.name, pc[0].offset, pc[1].base.name, pc[1].offset))
 
 class Edge(object):
     def __init__(self, base, is_virtual, is_public):
@@ -208,10 +208,10 @@ def tf():
 
 def populate():
     nodes = []
-    for i in xrange(10):
+    for i in range(10):
         newclass = Node('Class%d' % (i + 1))
         if i >= 3:
-            for j in xrange(3):
+            for j in range(3):
                 if nodes:
                     newclass.maybe_add_base(random.choice(nodes), is_virtual=tf(), is_public=tf())
         nodes += [newclass]
@@ -402,28 +402,28 @@ if __name__ == '__main__':
     nodes = populate()
     with open('things.gen.h', 'w') as things_h:
         for n in nodes:
-            print >>things_h, class_definition(n)
+            print(class_definition(n), file=things_h)
     with open('things.gen.cc', 'w') as things_cc:
-        print >>things_cc, '#include "things.gen.h"'
-        print >>things_cc, '#include "dynamicast.h"'
-        print >>things_cc, '#include <cassert>'
-        print >>things_cc, '#include <cstdio>'
-        print >>things_cc, '#include <typeinfo>\n'
+        print('#include "things.gen.h"', file=things_cc)
+        print('#include "dynamicast.h"', file=things_cc)
+        print('#include <cassert>', file=things_cc)
+        print('#include <cstdio>', file=things_cc)
+        print('#include <typeinfo>\n', file=things_cc)
         for n in nodes:
-            print >>things_cc, typeinfo_definition(n)
-        print >>things_cc, dispatcher_definition(nodes)
+            print(typeinfo_definition(n), file=things_cc)
+        print(dispatcher_definition(nodes), file=things_cc)
     with open('harness.gen.cc', 'w') as harness_cc:
-        print >>harness_cc, '#include "things.gen.h"'
-        print >>harness_cc, '#include "dynamicast.h"'
+        print('#include "things.gen.h"', file=harness_cc)
+        print('#include "dynamicast.h"', file=harness_cc)
         if options.benchmark:
-            print >>harness_cc, '#include "benchmark-harness.h"\n'
+            print('#include "benchmark-harness.h"\n', file=harness_cc)
             if MSVC:
-                print >>harness_cc, help_msvc_with_sfinae(nodes)
-            print >>harness_cc, benchmark_to_function_definition(nodes)
-            print >>harness_cc, benchmark_main_function_definition(nodes)
+                print(help_msvc_with_sfinae(nodes), file=harness_cc)
+            print(benchmark_to_function_definition(nodes), file=harness_cc)
+            print(benchmark_main_function_definition(nodes), file=harness_cc)
         else:
-            print >>harness_cc, '#include "test-harness.h"\n'
+            print('#include "test-harness.h"\n', file=harness_cc)
             if MSVC:
-                print >>harness_cc, help_msvc_with_sfinae(nodes)
-            print >>harness_cc, test_to_function_definition(nodes)
-            print >>harness_cc, test_main_function_definition(nodes)
+                print(help_msvc_with_sfinae(nodes), file=harness_cc)
+            print(test_to_function_definition(nodes), file=harness_cc)
+            print(test_main_function_definition(nodes), file=harness_cc)

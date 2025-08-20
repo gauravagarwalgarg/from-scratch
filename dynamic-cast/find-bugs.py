@@ -1,16 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import os
 import subprocess
 import sys
+import itertools
 
 
 def do_gcc_and_clang(seed):
     failed = []
     try:
         subprocess.check_call([
-            'python', 'generate-harness.py', '--seed', str(seed),
+            sys.executable, 'generate-harness.py', '--seed', str(seed),
         ], stdout=dev_null)
         try:
             subprocess.check_call([
@@ -18,7 +19,7 @@ def do_gcc_and_clang(seed):
                 'things.gen.cc', 'dynamicast.cc', 'harness.gen.cc',
                 '--g++',
             ], stdout=dev_null, stderr=dev_null, env=gcc_env)
-            print >>sys.stderr, '.',
+            print('.', end='', file=sys.stderr)
         except subprocess.CalledProcessError:
             failed += ['gcc']
         try:
@@ -27,7 +28,7 @@ def do_gcc_and_clang(seed):
                 'things.gen.cc', 'dynamicast.cc', 'harness.gen.cc',
                 '--clang'
             ], stdout=dev_null, stderr=dev_null, env=gcc_env)
-            print >>sys.stderr, '.',
+            print('.', end='', file=sys.stderr)
         except subprocess.CalledProcessError:
             failed += ['clang']
     except subprocess.CalledProcessError:
@@ -39,7 +40,7 @@ def do_msvc(seed):
     failed = []
     try:
         subprocess.check_call([
-            'python', 'generate-harness.py', '--seed', str(seed), '--msvc',
+            sys.executable, 'generate-harness.py', '--seed', str(seed), '--msvc',
         ], stdout=dev_null)
         try:
             subprocess.check_call([
@@ -47,7 +48,7 @@ def do_msvc(seed):
                 'things.gen.cc', 'dynamicast.cc', 'harness.gen.cc',
                 '--msvc'
             ], stdout=dev_null, stderr=dev_null)
-            print >>sys.stderr, '.',
+            print('.', end='', file=sys.stderr)
         except subprocess.CalledProcessError:
             failed += ['msvc']
     except subprocess.CalledProcessError:
@@ -63,9 +64,12 @@ if __name__ == '__main__':
     dev_null = open('/dev/null', 'w')
     gcc_env = os.environ.copy()
     gcc_env['CXXFLAGS'] = '-DFREE_USE_OF_CXX17'
-    for i in xrange(options.seed, long(1e12)):
+
+    # Use an effectively unbounded counter starting at options.seed
+    for i in itertools.count(options.seed):
         failed = []
         failed += do_gcc_and_clang(i)
         failed += do_msvc(i)
         if failed:
-            print '%s: %d' % ('+'.join(failed), i)
+            print('{}: {}'.format('+'.join(failed), i))
+

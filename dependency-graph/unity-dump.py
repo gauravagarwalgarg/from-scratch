@@ -51,13 +51,13 @@ def run_on_wandbox(code, compiler, options):
     )
     result = response.json()
     if 'compiler_message' in result:
-        print result['compiler_message']
+        print(result['compiler_message'])
     if 'program_output' in result:
-        print result['program_output']
+        print(result['program_output'])
     if 'signal' in result:
-        print result['signal']  # e.g. "Aborted"
+        print(result['signal'])  # e.g. "Aborted"
     if 'program_error' in result:
-        print result['program_error']
+        print(result['program_error'])
     return int(result.get('status', -1))
 
 
@@ -74,13 +74,13 @@ def run_on_rextester(code, language, options):
     result = response.json()
     status = 0
     if result.get('Errors') is not None:
-        print result['Errors']  # compiler errors + program stderr
+        print(result['Errors'])  # compiler errors + program stderr
         for line in result['Errors'].splitlines():
             m = re.match(r'Process exit code is not 0: (\d+)', line)
             if m:
                 status = int(m.group(1))
     if result.get('Result') is not None:
-        print result['Result']  # program stdout
+        print(result['Result'])  # program stdout
     return status
 
 
@@ -107,16 +107,16 @@ if __name__ == '__main__':
             options.clang = True
             options.msvc = False
         else:
-            print result
+            print(result)
 
     status = 0
     if status == 0 and options.clang:
-        print 'Running on Clang...'
+        print('Running on Clang...')
         status = run_on_wandbox(result, 'clang-head', 'c++1z,warning')
     if status == 0 and options.gcc:
-        print 'Running on GCC...'
+        print('Running on GCC...')
         status = run_on_wandbox(result, 'gcc-head', 'c++1z,warning')
     if status == 0 and options.msvc:
-        print 'Running on MSVC...'
+        print('Running on MSVC...')
         status = run_on_rextester(result, 28, 'source_file.cpp -o a.exe')
     sys.exit(status)
